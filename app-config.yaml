@@ -54,48 +54,12 @@ app:
     - page:home:
         config:
           defaultConfig:
-            - component: HomePageSearchBar
-              column: 0
-              row: 0
-              width: 12
-              height: 2
-              deletable: false
             - component: GettingStarted
               column: 0
               row: 1
-              width: 4
-              height: 11
-            - component: HomePageStarredEntities
-              column: 4
-              row: 2
-              width: 4
-              height: 4
-            - component: HomePageRandomJoke
-              column: 8
-              row: 2
-              width: 4
-              height: 4
-            - component: HomePageToolkit
-              column: 4
-              row: 6
-              width: 4
-              height: 3
-            - component: HomePageWorldClock
-              column: 8
-              row: 6
-              width: 4
-              height: 3
-            - component: HomePageMostVisited
-              column: 4
-              row: 9
-              width: 4
-              height: 4
-            - component: HomePageRecentlyVisited
-              column: 8
-              row: 9
-              width: 4
-              height: 4
-
+              width: 12
+              height: 14
+            
 organization:
   name: My Company
 
@@ -135,9 +99,11 @@ backend:
 integrations:
   github:
     - host: github.com
+      apps:
+        - $include: ./github-app-credentials.yaml
       # This is a Personal Access Token or PAT from GitHub. You can find out how to generate this token, and more information
       # about setting up the GitHub integration here: https://backstage.io/docs/integrations/github/locations#configuration
-      token: ${GITHUB_TOKEN}
+      #token: ${GITHUB_TOKEN}
     ### Example for how to add your GitHub Enterprise instance using the API:
     # - host: ghe.example.net
     #   apiBaseUrl: https://ghe.example.net/api/v3
@@ -188,8 +154,12 @@ catalog:
     entityFilename: catalog-info.yaml
     pullRequestBranchName: backstage-integration
   rules:
-    - allow: [Component, System, API, Resource, Location]
+    - allow: [Component, System, API, Resource, Location, Template]
   locations:
+    - type: file
+      target: ../../templates/healthcare-service/template.yaml
+      rules:
+        - allow: [Template]
     # Local example data, file locations are relative to the backend process, typically `packages/backend`
     - type: file
       target: ../../examples/entities.yaml

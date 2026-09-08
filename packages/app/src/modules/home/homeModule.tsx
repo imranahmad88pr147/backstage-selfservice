@@ -1,52 +1,89 @@
 import { createFrontendModule } from '@backstage/frontend-plugin-api';
-import { HomePageWidgetBlueprint } from '@backstage/plugin-home-react/alpha';
+import {
+  HomePageLayoutBlueprint,
+  HomePageWidgetBlueprint,
+} from '@backstage/plugin-home-react/alpha';
 import { MarkdownContent } from '@backstage/core-components';
+import { Fragment } from 'react';
 
 const content = `
-## Welcome to Backstage! 👋
+# Healthcare Developer Portal
 
-Backstage is your developer portal — a single place to manage all your
-software, services, and documentation.
+Welcome to the **Healthcare Developer Portal** — a self-service platform for creating standardized healthcare services.
 
-### Quick Start
+## 🚀 Create a New Service
 
-- **Explore the catalog** — Browse all your organization's software in
-  the [Software Catalog](/catalog)
-- **Create something new** — Use a [Software Template](/create) to
-  scaffold a new project in minutes
-- **Read the docs** — Find technical documentation for any service
-  right from its catalog page
+Start a new service using an approved **Golden Path template**.
 
-### Helpful Links
+The platform takes care of the initial setup so you can focus on building your service.
 
-- [Backstage Documentation](https://backstage.io/docs)
-- [Customizing Your Homepage](https://backstage.io/docs/getting-started/homepage)
-- [Adding Plugins](https://backstage.io/docs/plugins)
-- [Contributing](https://github.com/backstage/backstage/blob/master/CONTRIBUTING.md)
+### What the platform provides
 
-### How to Edit This Card
+- **Standardized service structure**
+- **Automated infrastructure provisioning**
+- **Automated CI/CD**
+- **Development, Staging, and Production environments**
+- **Organization-approved deployment standards**
 
-This widget is defined in \`packages/app/src/modules/home/homeModule.tsx\`.
-You can update the markdown content there to welcome your team with
-your own links and getting started tips.
+### Get Started
 
-To remove this card entirely, delete the getting started widget and
-remove it from the home module's extensions array in this file.
+[**🚀 Create a Service →**](/create)
+
+Choose your service type, provide a service name, select an environment, and let the platform handle the setup.
+
+---
+
+## How It Works
+
+**1. Choose your service**  
+Select the type of healthcare service you want to create.
+
+**2. Configure your environment**  
+Choose Development, Staging, or Production.
+
+**3. Create your service**  
+The platform generates a standardized GitHub repository from the selected template.
+
+**4. Deploy automatically**  
+The repository's CI/CD pipeline provisions the required AWS infrastructure using Terraform.
+
+---
+
+### 💡 Platform Principle
+
+> **You build the service. The platform provides the foundation.**
+
+Use the approved templates to follow consistent engineering standards without setting up infrastructure and CI/CD from scratch.
 `;
 
 const gettingStartedWidget = HomePageWidgetBlueprint.make({
   name: 'getting-started',
   params: {
     name: 'GettingStarted',
-    title: 'Getting Started',
-    description: 'Tips and links to help you get started with Backstage',
+    title: '',
+    description: 'Self-service platform for creating standardized healthcare services',
     components: async () => ({
       Content: () => <MarkdownContent content={content} />,
     }),
   },
 });
 
+const staticHomeLayout = HomePageLayoutBlueprint.make({
+  name: 'static',
+  params: {
+    loader: async () => ({ widgets }) => (
+      <>
+        {widgets
+          .filter(widget => widget.name === 'GettingStarted')
+          .map(widget => (
+            <Fragment key={widget.name}>{widget.component}</Fragment>
+          ))}
+      </>
+    ),
+  },
+});
+
 export const homeModule = createFrontendModule({
   pluginId: 'home',
-  extensions: [gettingStartedWidget],
+  extensions: [gettingStartedWidget, staticHomeLayout],
 });

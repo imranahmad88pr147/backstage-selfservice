@@ -1,0 +1,87 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+
+metadata:
+  name: healthcare-service
+  title: Healthcare Service
+  description: Create a standardized healthcare service repository
+  tags:
+    - healthcare
+    - self-service
+    - terraform
+
+spec:
+  owner: user:default/guest
+  type: service
+
+  parameters:
+
+    - title: Service Information
+      required:
+        - serviceName
+        - serviceType
+        - environment
+
+      properties:
+
+        serviceName:
+          title: Service Name
+          type: string
+          description: Unique name for the healthcare service
+          pattern: '^[a-z0-9]+(-[a-z0-9]+)*$'
+          ui:autofocus: true
+
+        serviceType:
+          title: Service Type
+          type: string
+          description: Select the type of healthcare service
+          enum:
+            - patient-service
+            - appointment-service
+            - billing-service
+          enumNames:
+            - Patient Service
+            - Appointment Service
+            - Billing Service
+
+        environment:
+          title: Environment
+          type: string
+          description: Select the deployment environment
+          enum:
+            - dev
+            - staging
+            - prod
+          enumNames:
+            - Development
+            - Staging
+            - Production
+          default: dev
+
+  steps:
+
+    - id: fetch-template
+      name: Generate Service
+      action: fetch:template
+      input:
+        url: ./content
+        copyWithoutTemplating:
+          - .github/workflows/*
+        values:
+          serviceName: ${{ parameters.serviceName }}
+          serviceType: ${{ parameters.serviceType }}
+          environment: ${{ parameters.environment }}
+
+    - id: publish
+      name: Create GitHub Repository
+      action: publish:github
+      input:
+        description: ${{ parameters.serviceType }} - ${{ parameters.serviceName }}
+        repoUrl: github.com?owner=healthcare-self-service&repo=${{ parameters.serviceName }}
+        defaultBranch: main
+
+  output:
+
+    links:
+      - title: GitHub Repository
+        url: ${{ steps.publish.output.remoteUrl }}

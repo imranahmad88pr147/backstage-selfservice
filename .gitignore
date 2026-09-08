@@ -54,3 +54,10 @@ e2e-test-report/
 
 # Cache
 .cache/
+
+app-config.local.yaml
+github-app-credentials.yaml
+
+# Debug artifacts (may contain resolved secrets)
+resolved-config.txt
+backend-start.log
