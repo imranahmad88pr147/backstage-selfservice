@@ -17,6 +17,12 @@ app:
     #     config:
     #       path: /
 
+    # Hide the Actions, Template Editor and Templating Extensions tabs on the /create page.
+    # Setting an extension ref to `false` disables that extension entirely.
+    - 'sub-page:scaffolder/actions': false
+    - 'sub-page:scaffolder/editor': false
+    - 'sub-page:scaffolder/templating-extensions': false
+
     # Visit tracking records which pages users navigate to and is disabled by default.
     # Enable it to populate the Most Visited and Recently Visited widgets on the Home page.
     # Visit data is stored via UserSettings storage if available, otherwise browser localStorage.
