@@ -6,9 +6,8 @@ metadata:
   title: Healthcare Service
   description: Create a standardized healthcare service repository
   tags:
-    - healthcare
-    - self-service
-    - terraform
+    - s3 bucket
+    - ec2 instance
 
 spec:
   owner: user:default/guest
