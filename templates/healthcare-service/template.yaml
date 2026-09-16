@@ -10,7 +10,6 @@ metadata:
     - ec2-instance
 
 spec:
-  owner: user:default/guest
   type: service
 
   parameters:
