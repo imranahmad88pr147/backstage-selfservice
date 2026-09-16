@@ -4,10 +4,10 @@ kind: Template
 metadata:
   name: healthcare-service
   title: Healthcare Service
-  description: Create a standardized healthcare service repository
+  description: Create a standardized healthcare service repository, Terraform infrastructure and CI/CD configuration. The tags indicate the AWS resources that will be provisioned when this template is used to create the service.
   tags:
-    - s3 bucket
-    - ec2 instance
+    - s3-bucket
+    - ec2-instance
 
 spec:
   owner: user:default/guest
