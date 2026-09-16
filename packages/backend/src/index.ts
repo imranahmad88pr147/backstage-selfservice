@@ -25,10 +25,16 @@ backend.add(import('@backstage/plugin-techdocs-backend'));
 
 // auth plugin
 backend.add(import('@backstage/plugin-auth-backend'));
-backend.add(
-  import('@backstage/plugin-auth-backend-module-oidc-provider'),
-);
+import { createBackendModule } from '@backstage/backend-plugin-api';
+
+import {
+  authProvidersExtensionPoint,
+  createOAuthProviderFactory,
+} from '@backstage/plugin-auth-node';
+
+import { oidcAuthenticator } from '@backstage/plugin-auth-backend-module-oidc-provider';
 // See https://backstage.io/docs/backend-system/building-backends/migrating#the-auth-plugin
+backend.add(import('./auth'));
 backend.add(import('@backstage/plugin-auth-backend-module-guest-provider'));
 // See https://backstage.io/docs/auth/guest/provider
 
