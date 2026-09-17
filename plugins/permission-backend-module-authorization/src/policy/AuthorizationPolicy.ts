@@ -12,12 +12,16 @@ import {
   PolicyQueryUser,
 } from '@backstage/plugin-permission-node';
 
+import { catalogEntityReadPermission } from '@backstage/plugin-catalog-common/alpha';
+
 import {
   actionExecutePermission,
   taskCancelPermission,
   taskCreatePermission,
   taskReadPermission,
   templateManagementPermission,
+  templateParameterReadPermission,
+  templateStepReadPermission,
 } from '@backstage/plugin-scaffolder-common/alpha';
 
 import {
@@ -64,6 +68,13 @@ export class AuthorizationPolicy implements PermissionPolicy {
       return { result: AuthorizeResult.ALLOW };
     }
 
+    // Developers can view catalog entities, including software templates.
+    if (isPermission(request.permission, catalogEntityReadPermission)) {
+      return isDeveloper
+        ? { result: AuthorizeResult.ALLOW }
+        : { result: AuthorizeResult.DENY };
+    }
+
     // Developers can create scaffolder tasks.
     if (isPermission(request.permission, taskCreatePermission)) {
       return isDeveloper
@@ -105,6 +116,22 @@ export class AuthorizationPolicy implements PermissionPolicy {
 
     // Developers can execute approved scaffolder actions.
     if (isPermission(request.permission, actionExecutePermission)) {
+      return isDeveloper
+        ? { result: AuthorizeResult.ALLOW }
+        : { result: AuthorizeResult.DENY };
+    }
+
+    // Developers can view and use approved templates.
+    if (
+      isPermission(
+        request.permission,
+        templateParameterReadPermission,
+      ) ||
+      isPermission(
+        request.permission,
+        templateStepReadPermission,
+      )
+    ) {
       return isDeveloper
         ? { result: AuthorizeResult.ALLOW }
         : { result: AuthorizeResult.DENY };
