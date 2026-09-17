@@ -13,6 +13,7 @@ import { useApi } from '@backstage/core-plugin-api';
 
 import { SidebarLogo } from './SidebarLogo';
 import MenuIcon from '@material-ui/icons/Menu';
+import ExitToAppIcon from '@material-ui/icons/ExitToApp';
 
 import { entraAuthApiRef } from '../../apis/authApis';
 
@@ -36,6 +37,11 @@ export const SidebarContent = NavContentBlueprint.make({
             setDisplayName('User');
           });
       }, [authApi]);
+
+      const handleSignOut = async () => {
+  await authApi.signOut();
+  window.location.href = '/';
+};
 
       const nav = navItems.withComponent(item => (
         <SidebarItem
@@ -62,6 +68,13 @@ export const SidebarContent = NavContentBlueprint.make({
             icon={() => null}
             text={displayName}
             to="#"
+          />
+
+          <SidebarItem
+            icon={() => <ExitToAppIcon />}
+            text="Sign Out"
+            to="#"
+            onClick={handleSignOut}
           />
         </Sidebar>
       );

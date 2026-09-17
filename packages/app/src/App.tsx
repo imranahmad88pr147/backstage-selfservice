@@ -1,4 +1,5 @@
 import { createApp } from '@backstage/frontend-defaults';
+import userSettingsModule from '@backstage/plugin-app-module-user-settings';
 
 import { navModule } from './modules/nav';
 import { homeModule } from './modules/home';
@@ -34,6 +35,7 @@ export default createApp({
   features: [
     navModule,
     homeModule,
+    userSettingsModule,
 
     createFrontendModule({
       pluginId: 'app',
