@@ -49,6 +49,7 @@ const customOidcProvider = createBackendModule({
               );
 
               console.log('OIDC oid:', oid);
+              console.log('OIDC claims:', claims);
 
               const catalogUser = await ctx.findCatalogUser({
                 annotations: {
@@ -62,8 +63,71 @@ const customOidcProvider = createBackendModule({
                 );
               }
 
-              return ctx.signInWithCatalogUser({
-                entityRef: stringifyEntityRef(catalogUser.entity),
+              // Read the App Roles assigned by Microsoft Entra ID.
+              const roles = Array.isArray(claims.roles)
+                ? claims.roles.filter(
+                    (role): role is string =>
+                      typeof role === 'string',
+                  )
+                : [];
+
+              console.log('Entra roles:', roles);
+
+              // Map the Entra App Role to a Backstage authorization group.
+              const roleOwnershipEntityRefs: string[] = [];
+
+              if (roles.includes('backstage.admin')) {
+                roleOwnershipEntityRefs.push(
+                  'group:default/backstage-admins',
+                );
+              }
+
+              if (roles.includes('backstage.developer')) {
+                roleOwnershipEntityRefs.push(
+                  'group:default/backstage-developers',
+                );
+              }
+
+              if (roleOwnershipEntityRefs.length === 0) {
+                throw new Error(
+                  'Login failed: user does not have a recognized Backstage App Role',
+                );
+              }
+
+              console.log(
+                'Backstage role refs:',
+                roleOwnershipEntityRefs,
+              );
+
+              // Resolve the user's normal Backstage ownership references
+              // from their Catalog entity.
+              const { ownershipEntityRefs } =
+                await ctx.resolveOwnershipEntityRefs(
+                  catalogUser.entity,
+                );
+
+              console.log(
+                'Catalog ownership refs:',
+                ownershipEntityRefs,
+              );
+
+              // Combine the normal Catalog ownership references
+              // with the authorization role reference.
+              const allOwnershipEntityRefs = [
+                ...ownershipEntityRefs,
+                ...roleOwnershipEntityRefs,
+              ];
+
+              console.log(
+                'Final ownership refs:',
+                allOwnershipEntityRefs,
+              );
+
+              return ctx.issueToken({
+                claims: {
+                  sub: stringifyEntityRef(catalogUser.entity),
+                  ent: allOwnershipEntityRefs,
+                },
               });
 
             //   return ctx.signInWithCatalogUser({
