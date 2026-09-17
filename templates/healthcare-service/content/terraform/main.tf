@@ -12,7 +12,11 @@ provider "aws" {
 }
 
 module "s3_bucket" {
-  source = "./modules/s3-bucket"
-
+  source      = "./modules/s3-bucket"
   bucket_name = "${{ values.serviceName }}-${{ values.environment }}"
+}
+
+module "ec2" {
+  source        = "./modules/ec2"
+  instance_name = "${{ values.serviceName }}-${{ values.environment }}"
 }
