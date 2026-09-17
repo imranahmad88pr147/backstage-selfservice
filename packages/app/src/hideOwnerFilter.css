@@ -1,0 +1,23 @@
+/*
+ * Hide the "Owner" filter dropdown on the Scaffolder /create Templates page.
+ *
+ * The scaffolder plugin (@backstage/plugin-scaffolder) hardcodes the
+ * EntityOwnerPicker inside its TemplatesSubPage component and provides no
+ * configuration to disable it, so we hide it with CSS instead.
+ *
+ * We target the stable `data-testid="owner-picker-expand"` attribute
+ * (rendered by CatalogAutocomplete for the owner picker, name: "owner-picker")
+ * rather than CSS class names, because Material-UI v4 generates different
+ * class names in development vs production builds.
+ *
+ * NOTE: This relies on the DOM structure of @backstage/plugin-catalog-react
+ * CatalogAutocomplete. If the Owner dropdown ever reappears after upgrading
+ * that package, this selector needs to be updated.
+ *
+ * The Autocomplete (including its title) is rendered inside the <label>
+ * element, so hiding the label hides the entire picker.
+ */
+label:has(> div > button[data-testid='owner-picker-expand']),
+label:has(> div [data-testid='owner-picker-expand']) {
+  display: none;
+}
