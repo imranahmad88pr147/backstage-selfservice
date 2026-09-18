@@ -18,6 +18,7 @@ const signInPage = SignInPageBlueprint.make({
   params: {
     loader: async () => props =>
       (
+// This is built-in SignIn page plugin where we just have to pass provider prop inside it along with apiRef and message. Under the hood it has button implementation onClick() function.
         <SignInPage
           {...props}
           provider={{

@@ -129,6 +129,7 @@ const customOidcProvider = createBackendModule({
                   ent: allOwnershipEntityRefs,
                 },
               });
+//           Backstage creates its own identity token in above. It's a Backstage identity credential used within the Backstage ecosystem to represent the authenticated user. Backstage's permission system can use that identity when evaluating: permissions like sacfforlder.task.read
 
             //   return ctx.signInWithCatalogUser({
             //     entityRef: {

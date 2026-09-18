@@ -98,7 +98,7 @@ techdocs:
     runIn: 'docker'
   publisher:
     type: 'local'
-
+# Backstage can have different configurations for different environments. In our case, we are only using one i.e., development which we are telling our entraAuthApi to use this env configuration from this file.
 auth:
   environment: development
 

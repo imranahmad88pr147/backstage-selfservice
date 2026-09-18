@@ -28,7 +28,7 @@ import {
   createScaffolderTaskConditionalDecision,
   scaffolderTaskConditions,
 } from '@backstage/plugin-scaffolder-backend/alpha';
-
+// Backstage's authentication/permission infrastructure validates that identity and converts it into the PolicyQueryUser object that your policy receives.
 export class AuthorizationPolicy implements PermissionPolicy {
   constructor(private readonly userInfo: UserInfoService) {}
 

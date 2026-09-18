@@ -45,12 +45,13 @@ export const entraAuthApi = ApiBlueprint.make({
           environment: configApi.getOptionalString(
             'auth.environment',
           ),
-
+//   There are actually two pieces here: Discovery API finds the backend base URL, while Backstage's auth API knows the /api/auth/oidc path from the provider ID.
           provider: {
             id: 'oidc',
             title: 'Microsoft Entra ID',
             icon: () => null,
           },
+  //        Above connects your frontend authentication API to the backend provider you registered:
 
           defaultScopes: [
             'openid',
