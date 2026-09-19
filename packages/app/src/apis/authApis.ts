@@ -16,10 +16,10 @@ import {
 } from '@backstage/frontend-plugin-api';
 
 export const entraAuthApiRef = createApiRef<
-  OpenIdConnectApi &
-    ProfileInfoApi &
-    BackstageIdentityApi &
-    SessionApi
+  OpenIdConnectApi & // This api provides OIDC functionality
+    ProfileInfoApi & // This is used by the frontend that gives logged in user info like displayName from org.yaml
+    BackstageIdentityApi & // Frontend can access backstage idenitity of current logged-in user 
+    SessionApi // This represents authentication session. The signOut() capability comes from the authentication/session side of the API.
 >().with({
   id: 'auth.entra',
 });
@@ -53,11 +53,11 @@ export const entraAuthApi = ApiBlueprint.make({
           },
   //        Above connects your frontend authentication API to the backend provider you registered:
 
-          defaultScopes: [
-            'openid',
-            'profile',
-            'email',
-            'offline_access',
+          defaultScopes: [ // These are the scopes that this api expects to recieve these.
+            'openid', // Authenticate me using OIDC
+            'profile', // Give me basic user profile information
+            'email', // Give me email-related information
+            'offline_access', // This asks the identity provider for the ability to obtain a refresh token, allowing the application to maintain authentication without requiring the user to log in again whenever the short-lived access token expires.
           ],
         }),
     }),
