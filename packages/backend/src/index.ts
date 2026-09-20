@@ -1,11 +1,3 @@
-/*
- * Hi!
- *
- * Note that this is an EXAMPLE Backstage backend. Please check the README.
- *
- * Happy hacking!
- */
-
 import { createBackend } from '@backstage/backend-defaults';
 
 const backend = createBackend();
@@ -20,23 +12,10 @@ backend.add(
   import('@backstage/plugin-scaffolder-backend-module-notifications'),
 );
 
-// techdocs plugin
-backend.add(import('@backstage/plugin-techdocs-backend'));
-
 // auth plugin
 backend.add(import('@backstage/plugin-auth-backend'));
-import { createBackendModule } from '@backstage/backend-plugin-api';
-
-import {
-  authProvidersExtensionPoint,
-  createOAuthProviderFactory,
-} from '@backstage/plugin-auth-node';
-
-import { oidcAuthenticator } from '@backstage/plugin-auth-backend-module-oidc-provider';
 // See https://backstage.io/docs/backend-system/building-backends/migrating#the-auth-plugin
 backend.add(import('./auth'));
-backend.add(import('@backstage/plugin-auth-backend-module-guest-provider'));
-// See https://backstage.io/docs/auth/guest/provider
 
 // catalog plugin
 backend.add(import('@backstage/plugin-catalog-backend'));
@@ -48,7 +27,6 @@ backend.add(
 backend.add(import('@backstage/plugin-catalog-backend-module-logs'));
 
 // permission plugin
-
 backend.add(import('@backstage/plugin-permission-backend'));
 // I am merging the following policy with my new custom policy made for rbac.
 // Custom policy: deny catalog.entity.create to hide "Register Existing Component"
@@ -56,20 +34,11 @@ backend.add(import('@backstage/plugin-permission-backend'));
 //   import('./plugins/permissions/module'),
 // );
 
-
 // search plugin
 backend.add(import('@backstage/plugin-search-backend'));
 
-// search engine
-// See https://backstage.io/docs/features/search/search-engines
-backend.add(import('@backstage/plugin-search-backend-module-pg'));
-
 // search collators
 backend.add(import('@backstage/plugin-search-backend-module-catalog'));
-backend.add(import('@backstage/plugin-search-backend-module-techdocs'));
-
-// kubernetes plugin
-backend.add(import('@backstage/plugin-kubernetes-backend'));
 
 // user settings plugin
 backend.add(import('@backstage/plugin-user-settings-backend'));
@@ -78,8 +47,8 @@ backend.add(import('@backstage/plugin-user-settings-backend'));
 backend.add(import('@backstage/plugin-notifications-backend'));
 backend.add(import('@backstage/plugin-signals-backend'));
 
-// mcp actions plugin
-backend.add(import('@backstage/plugin-mcp-actions-backend'));
+backend.add(
+  import('@internal/backstage-plugin-permission-backend-module-authorization'),
+);
 
-backend.add(import('@internal/backstage-plugin-permission-backend-module-authorization'));
 backend.start();
