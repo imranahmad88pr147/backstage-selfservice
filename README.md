@@ -29,7 +29,8 @@ The platform provides developers with a standardized workflow to create healthca
   - [9. Configure the GitHub App](#9-configure-the-github-app)
   - [10. Configure AWS](#10-configure-aws)
   - [11. Configure Environment Variables](#11-configure-environment-variables)
-  - [12. Start Backstage](#12-start-backstage)
+  - [12. Configure the Service Repository](#12-configure-the-service-repository)
+  - [13. Start Backstage](#13-start-backstage)
 - [Using the Self-Service Platform](#using-the-self-service-platform)
 - [Configuration Reference](#configuration-reference)
 - [Security](#security)
@@ -173,29 +174,37 @@ The major components of the platform are:
 
 # Authentication Flow
 
-The diagram below follows a single sign-in request end to end: from the user clicking **Sign in** in the browser, through Backstage's frontend auth API, into the Backstage backend's OIDC handling, and finally into the `signInResolver` that turns Entra ID claims into a Backstage identity token.
-
 ```mermaid
 flowchart TD
 
     subgraph Browser["Browser"]
+
         A["Backstage UI<br/><br/>User clicks<br/>'Sign in using Microsoft Entra ID'"]
+
         B["SignInPage<br/><br/>provider.apiRef = entraAuthApiRef"]
+
         C["entraAuthApi<br/><br/>→ DiscoveryApi<br/>→ provider.id = 'oidc'"]
+
     end
 
     D["http://localhost:7007/api/auth/oidc<br/><br/>DiscoveryApi discovers the backend"]
 
     subgraph Backend["Backstage Backend (localhost:7007)"]
+
         E["Sends auth request"]
+
         F["Auth Backend<br/><br/>Performs Entra ID OIDC Discovery<br/>(authorization + token endpoints)<br/>from the metadata URL in app-config.yaml<br/>to obtain the auth code and access token"]
+
     end
 
     G["Response: ID Token / Claims"]
 
     subgraph Resolver["signInResolver (auth.ts)"]
+
         H["Reads Entra claims<br/><br/>claims.oid<br/>claims.roles<br/>claims.preferred_username"]
+
         I["Puts users and roles<br/>into the Backstage identity token"]
+
     end
 
     A --> B
@@ -212,30 +221,39 @@ flowchart TD
 
 # Authorization Flow
 
-Once a user is signed in, every action they take in Backstage is routed through the Permission Framework, which delegates the allow/deny decision to the platform's custom `AuthorizationPolicy.ts`.
-
 ```mermaid
 flowchart TD
 
     subgraph Browser["Browser"]
+
         A["User is signed in<br/><br/>Example:<br/>user:default/bilal<br/>Role: Developer"]
+
         B["User performs an action<br/><br/>Example: Open Task / Cancel Task"]
+
     end
 
     subgraph Backend["Backstage Backend"]
+
         C["Permission Framework"]
+
         D["AuthorizationPolicy.ts"]
+
         E["Reads user context<br/><br/>user.info<br/>ownershipEntityRefs"]
+
     end
 
     F{"Which role does<br/>the user have?"}
+
     G["Admin Rules"]
+
     H["Developer Rules"]
+
     I["DENY<br/>Unknown / unauthorized user"]
 
     J{"Does the requested<br/>operation satisfy<br/>the authorization rules?"}
 
     K["ALLOW"]
+
     L["DENY"]
 
     A --> B
@@ -419,7 +437,7 @@ Application (client) ID
 Directory (tenant) ID
 ```
 
-These values are identifiers and are configured through environment variables.
+These values are configured through environment variables.
 
 The client secret is sensitive and must be protected.
 
@@ -475,8 +493,6 @@ You will configure it through:
 AUTH_OIDC_CLIENT_SECRET
 ```
 
-> Microsoft Entra displays the secret value only when it is created. Store it securely.
-
 ---
 
 # 7. Create Entra App Roles
@@ -493,11 +509,7 @@ Backstage Platform
 App roles
 ```
 
-Create the administrator role.
-
-## Administrator
-
-Configure:
+Create the administrator role:
 
 ```text
 Display name:
@@ -513,13 +525,7 @@ Description:
 Backstage platform administrator
 ```
 
-Enable the role.
-
----
-
-## Developer
-
-Create another role:
+Create the developer role:
 
 ```text
 Display name:
@@ -535,8 +541,6 @@ Description:
 Backstage platform developer
 ```
 
-Enable the role.
-
 The important values are:
 
 ```text
@@ -544,7 +548,7 @@ backstage.admin
 backstage.developer
 ```
 
-These are the values read by the Backstage authentication resolver.
+These values are read by the Backstage authentication resolver.
 
 ---
 
@@ -560,11 +564,7 @@ Microsoft Entra ID
 Enterprise applications
     ↓
 Backstage Platform
-```
-
-Open:
-
-```text
+    ↓
 Users and groups
 ```
 
@@ -665,8 +665,6 @@ The real credentials file must not be committed.
 
 The example file is provided so another developer can understand the expected configuration without exposing credentials.
 
----
-
 ## GitHub Organization
 
 The GitHub organization configured for the GitHub App must be the organization where the App is installed.
@@ -710,8 +708,6 @@ AWS Resources
 
 This avoids storing long-lived AWS access keys in GitHub Actions.
 
----
-
 ## Create the AWS OIDC Identity Provider
 
 In AWS IAM, configure GitHub as an OpenID Connect identity provider.
@@ -727,8 +723,6 @@ Audience:
 ```text
 sts.amazonaws.com
 ```
-
----
 
 ## Create the IAM Role
 
@@ -747,6 +741,44 @@ arn:aws:iam::<YOUR-AWS-ACCOUNT-ID>:role/<YOUR-GITHUB-OIDC-ROLE>
 Use your own AWS account ID and role name.
 
 Do not copy an AWS role ARN from another installation.
+
+## Configure the IAM Role ARN in the CI/CD Workflow
+
+After creating the IAM role, its ARN must be configured in the generated GitHub Actions workflow.
+
+Open:
+
+```text
+templates/healthcare-service/content/.github/workflows/terraform.yml
+```
+
+Find the AWS credentials configuration:
+
+```yaml
+- name: Configure AWS credentials
+  uses: aws-actions/configure-aws-credentials@v4
+  with:
+    role-to-assume: <YOUR-AWS-IAM-ROLE-ARN>
+    aws-region: us-east-1
+```
+
+Replace:
+
+```text
+<YOUR-AWS-IAM-ROLE-ARN>
+```
+
+with the ARN of the IAM role you created.
+
+For example:
+
+```yaml
+role-to-assume: arn:aws:iam::<YOUR-AWS-ACCOUNT-ID>:role/<YOUR-GITHUB-OIDC-ROLE>
+```
+
+The ARN is not an AWS secret, but it is environment-specific configuration and should not contain another user's AWS account or role.
+
+> If you add additional service templates in the future, configure the corresponding GitHub Actions workflow in each template's `content/.github/workflows/` directory with the IAM role ARN appropriate for that environment.
 
 ---
 
@@ -798,8 +830,6 @@ export AUTH_SESSION_SECRET="$(node -e "console.log(require('crypto').randomBytes
 | `AUTH_OIDC_CLIENT_SECRET` | Entra application client secret | Yes |
 | `AUTH_SESSION_SECRET` | Backstage session secret | Yes |
 
----
-
 ## Generate a Session Secret
 
 Generate a random session secret with:
@@ -816,9 +846,69 @@ $env:AUTH_SESSION_SECRET="<GENERATED-VALUE>"
 
 ---
 
-# 12. Start Backstage
+# 12. Configure the Service Repository
 
-After configuring the required environment variables:
+The healthcare service template creates a GitHub repository for the service.
+
+Open:
+
+```text
+templates/healthcare-service/template.yaml
+```
+
+Inside the `publish:github` step, configure the GitHub repository URL:
+
+```yaml
+- id: publish
+  name: Create GitHub Repository
+  action: publish:github
+  input:
+    description: ${{ parameters.serviceType }} - ${{ parameters.serviceName }}
+    repoUrl: github.com?owner=<YOUR-GITHUB-ORG>&repo=${{ parameters.serviceName }}
+    defaultBranch: main
+```
+
+Replace:
+
+```text
+<YOUR-GITHUB-ORG>
+```
+
+with the GitHub organization where your GitHub App is installed.
+
+For example:
+
+```yaml
+repoUrl: github.com?owner=my-healthcare-organization&repo=${{ parameters.serviceName }}
+```
+
+The repository name is generated dynamically from:
+
+```text
+${{ parameters.serviceName }}
+```
+
+Therefore, when a developer enters:
+
+```text
+patient-service
+```
+
+the resulting repository will be created as:
+
+```text
+<YOUR-GITHUB-ORG>/patient-service
+```
+
+The `owner` value must correspond to the GitHub organization configured for the GitHub App.
+
+> If you create additional Backstage templates that publish repositories to GitHub, configure the `repoUrl` in each template accordingly.
+
+---
+
+# 13. Start Backstage
+
+After configuring the required environment variables and GitHub/AWS settings:
 
 ```bash
 yarn start
@@ -958,7 +1048,7 @@ providers:
 
 ---
 
-# GitHub App Configuration
+## GitHub App Configuration
 
 The local GitHub App credentials file follows the structure:
 
@@ -977,6 +1067,42 @@ allowedInstallationOwners:
 ```
 
 Keep the real credentials file out of source control.
+
+---
+
+## AWS GitHub OIDC Configuration
+
+The generated workflow uses:
+
+```yaml
+uses: aws-actions/configure-aws-credentials@v4
+```
+
+with:
+
+```yaml
+role-to-assume: <YOUR-AWS-IAM-ROLE-ARN>
+```
+
+The role ARN must correspond to the IAM role configured for GitHub OIDC in your AWS account.
+
+---
+
+## Healthcare Service Repository Configuration
+
+The GitHub repository destination is configured in:
+
+```text
+templates/healthcare-service/template.yaml
+```
+
+Example:
+
+```yaml
+repoUrl: github.com?owner=<YOUR-GITHUB-ORG>&repo=${{ parameters.serviceName }}
+```
+
+The organization should be the same GitHub organization where the GitHub App is installed.
 
 ---
 
@@ -1158,6 +1284,12 @@ It controls:
 - Generated project structure
 - Template outputs
 
+The GitHub repository destination is configured in the `publish:github` action:
+
+```yaml
+repoUrl: github.com?owner=<YOUR-GITHUB-ORG>&repo=${{ parameters.serviceName }}
+```
+
 ---
 
 ## `templates/healthcare-service/content/`
@@ -1165,6 +1297,8 @@ It controls:
 Contains the files that are generated into the developer's new service repository.
 
 This includes the Terraform configuration and GitHub Actions workflow.
+
+The GitHub Actions workflow contains the AWS IAM role configuration used for GitHub OIDC.
 
 ---
 
