@@ -75,7 +75,7 @@ spec:
       action: publish:github
       input:
         description: ${{ parameters.serviceType }} - ${{ parameters.serviceName }}
-        repoUrl: github.com?owner=healthcare-self-service&repo=${{ parameters.serviceName }}
+        repoUrl: github.com?owner=<YOUR-GITHUB-ORG>&repo=${{ parameters.serviceName }}
         defaultBranch: main
 
   output:

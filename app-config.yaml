@@ -108,7 +108,7 @@ auth:
   providers:
     oidc:
       development:
-        metadataUrl: https://login.microsoftonline.com/528e1661-6cc7-421d-a76b-03ddae5a611c/v2.0/.well-known/openid-configuration
+        metadataUrl: ${AUTH_OIDC_METADATA_URL}
         clientId: ${AUTH_OIDC_CLIENT_ID}
         clientSecret: ${AUTH_OIDC_CLIENT_SECRET}
         prompt: login

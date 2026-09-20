@@ -22,7 +22,7 @@ kind: User
 metadata:
   name: ali
   annotations:
-    microsoft.com/user-oid: e2555667-ba77-49de-b5ec-d6bebafd8ec1
+   microsoft.com/user-oid: <your-real-user-oid>
 spec:
   profile:
     displayName: Ali
@@ -34,7 +34,7 @@ kind: User
 metadata:
   name: bilal
   annotations:
-    microsoft.com/user-oid: 045a6cc3-abe5-4ebf-abde-e912eff07ec5
+    microsoft.com/user-oid: <your-real-user-oid>
 spec:
   profile:
     displayName: Bilal
