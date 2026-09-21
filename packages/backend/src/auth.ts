@@ -43,14 +43,6 @@ const customOidcProvider = createBackendModule({
                 );
               }
 
-              console.log(
-                'OIDC preferred_username:',
-                preferredUsername,
-              );
-
-              console.log('OIDC oid:', oid);
-              console.log('OIDC claims:', claims);
-
               const catalogUser = await ctx.findCatalogUser({
                 annotations: {
                   'microsoft.com/user-oid': oid,
@@ -70,8 +62,6 @@ const customOidcProvider = createBackendModule({
                       typeof role === 'string',
                   )
                 : [];
-
-              console.log('Entra roles:', roles);
 
               // Map the Entra App Role to a Backstage authorization group.
               const roleOwnershipEntityRefs: string[] = [];
@@ -94,22 +84,12 @@ const customOidcProvider = createBackendModule({
                 );
               }
 
-              console.log(
-                'Backstage role refs:',
-                roleOwnershipEntityRefs,
-              );
-
               // Resolve the user's normal Backstage ownership references
               // from their Catalog entity.
               const { ownershipEntityRefs } =
                 await ctx.resolveOwnershipEntityRefs(
                   catalogUser.entity,
                 );
-
-              console.log(
-                'Catalog ownership refs:',
-                ownershipEntityRefs,
-              );
 
               // Combine the normal Catalog ownership references
               // with the authorization role reference.
@@ -118,26 +98,12 @@ const customOidcProvider = createBackendModule({
                 ...roleOwnershipEntityRefs,
               ];
 
-              console.log(
-                'Final ownership refs:',
-                allOwnershipEntityRefs,
-              );
-
               return ctx.issueToken({
                 claims: {
                   sub: stringifyEntityRef(catalogUser.entity),
                   ent: allOwnershipEntityRefs,
                 },
               });
-//           Backstage creates its own identity token in above. It's a Backstage identity credential used within the Backstage ecosystem to represent the authenticated user. Backstage's permission system can use that identity when evaluating: permissions like sacfforlder.task.read
-
-            //   return ctx.signInWithCatalogUser({
-            //     entityRef: {
-            //       kind: 'User',
-            //       namespace: 'default',
-            //       name: 'imran',
-            //     },
-            //   });
             
             },
           }),

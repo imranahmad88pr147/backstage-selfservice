@@ -41,8 +41,6 @@ export class AuthorizationPolicy implements PermissionPolicy {
       request.permission.name,
     );
 
-    console.log('Permission policy user:', user);
-
     const ownershipEntityRefs =
       user?.info.ownershipEntityRefs ?? [];
 
@@ -54,11 +52,6 @@ export class AuthorizationPolicy implements PermissionPolicy {
       'group:default/backstage-developers',
     );
 
-    console.log('Is Backstage Admin:', isAdmin);
-    console.log('Is Backstage Developer:', isDeveloper);
-
-    // Preserve the existing behavior:
-    // deny catalog.entity.create to hide "Register Existing Component".
     if (request.permission.name === 'catalog.entity.create') {
       return { result: AuthorizeResult.DENY };
     }
