@@ -26,17 +26,19 @@ The platform provides developers with a standardized workflow to create healthca
   - [6. Create the Client Secret](#6-create-the-client-secret)
   - [7. Create Entra App Roles](#7-create-entra-app-roles)
   - [8. Add Users and Assign Roles](#8-add-users-and-assign-roles)
-  - [9. Configure the GitHub App](#9-configure-the-github-app)
-  - [10. Configure AWS](#10-configure-aws)
-  - [11. Configure Environment Variables](#11-configure-environment-variables)
-  - [12. Configure the Service Repository](#12-configure-the-service-repository)
-  - [13. Start Backstage](#13-start-backstage)
+  - [9. Register Users in the Backstage Catalog](#9-register-users-in-the-backstage-catalog)
+  - [10. Configure the GitHub App](#10-configure-the-github-app)
+  - [11. Configure AWS](#11-configure-aws)
+  - [12. Configure Environment Variables](#12-configure-environment-variables)
+  - [13. Configure the Service Repository](#13-configure-the-service-repository)
+  - [14. Start Backstage](#14-start-backstage)
 - [Using the Self-Service Platform](#using-the-self-service-platform)
 - [Configuration Reference](#configuration-reference)
 - [Security](#security)
 - [Project Structure](#project-structure)
 - [Development](#development)
 - [Current Scope](#current-scope)
+- [Summary](#summary)
 
 ---
 
@@ -162,6 +164,7 @@ The major components of the platform are:
 | OIDC | Authentication protocol between Backstage and Entra ID |
 | Backstage Permission Framework | Authorization |
 | Entra App Roles | Admin/developer role assignment |
+| Backstage Catalog | Stores platform user and entity information |
 | Backstage Scaffolder | Service creation automation |
 | GitHub | Source-code repository |
 | GitHub App | Backstage-to-GitHub integration |
@@ -178,33 +181,23 @@ The major components of the platform are:
 flowchart TD
 
     subgraph Browser["Browser"]
-
         A["Backstage UI<br/><br/>User clicks<br/>'Sign in using Microsoft Entra ID'"]
-
         B["SignInPage<br/><br/>provider.apiRef = entraAuthApiRef"]
-
         C["entraAuthApi<br/><br/>→ DiscoveryApi<br/>→ provider.id = 'oidc'"]
-
     end
 
     D["http://localhost:7007/api/auth/oidc<br/><br/>DiscoveryApi discovers the backend"]
 
     subgraph Backend["Backstage Backend (localhost:7007)"]
-
         E["Sends auth request"]
-
         F["Auth Backend<br/><br/>Performs Entra ID OIDC Discovery<br/>(authorization + token endpoints)<br/>from the metadata URL in app-config.yaml<br/>to obtain the auth code and access token"]
-
     end
 
     G["Response: ID Token / Claims"]
 
     subgraph Resolver["signInResolver (auth.ts)"]
-
         H["Reads Entra claims<br/><br/>claims.oid<br/>claims.roles<br/>claims.preferred_username"]
-
-        I["Puts users and roles<br/>into the Backstage identity token"]
-
+        I["Finds the matching<br/>Backstage Catalog user<br/><br/>Maps Entra roles<br/>and issues Backstage identity token"]
     end
 
     A --> B
@@ -217,6 +210,10 @@ flowchart TD
     H --> I
 ```
 
+The sign-in resolver uses the Entra user's object ID (`oid`) to locate the corresponding user in the Backstage Catalog.
+
+Therefore, assigning a user access in Microsoft Entra ID alone is not sufficient. The user must also have a corresponding entry in the Backstage Catalog.
+
 ---
 
 # Authorization Flow
@@ -225,21 +222,17 @@ flowchart TD
 flowchart TD
 
     subgraph Browser["Browser"]
-
         A["User is signed in<br/><br/>Example:<br/>user:default/bilal<br/>Role: Developer"]
 
         B["User performs an action<br/><br/>Example: Open Task / Cancel Task"]
-
     end
 
     subgraph Backend["Backstage Backend"]
-
         C["Permission Framework"]
 
         D["AuthorizationPolicy.ts"]
 
         E["Reads user context<br/><br/>user.info<br/>ownershipEntityRefs"]
-
     end
 
     F{"Which role does<br/>the user have?"}
@@ -308,6 +301,7 @@ For task-related permissions, developers are restricted to their own tasks.
 | Microsoft Entra ID | Authentication |
 | OpenID Connect | Authentication protocol |
 | Backstage Permission Framework | Authorization |
+| Backstage Catalog | User and entity information |
 | GitHub | Source control |
 | GitHub App | GitHub integration |
 | Backstage Scaffolder | Service creation |
@@ -363,6 +357,7 @@ Do not use credentials from another installation.
 
 ```bash
 git clone <YOUR-REPOSITORY-URL>
+
 cd backstage-platform
 ```
 
@@ -400,6 +395,7 @@ For example:
 
 ```text
 Name:
+
 Backstage Platform
 ```
 
@@ -409,6 +405,7 @@ After registering the application, Microsoft Entra ID will provide:
 
 ```text
 Application (client) ID
+
 Directory (tenant) ID
 ```
 
@@ -434,6 +431,7 @@ The important identifiers are:
 
 ```text
 Application (client) ID
+
 Directory (tenant) ID
 ```
 
@@ -513,15 +511,19 @@ Create the administrator role:
 
 ```text
 Display name:
+
 Backstage Admin
 
 Allowed member types:
+
 Users/Groups
 
 Value:
+
 backstage.admin
 
 Description:
+
 Backstage platform administrator
 ```
 
@@ -529,15 +531,19 @@ Create the developer role:
 
 ```text
 Display name:
+
 Backstage Developer
 
 Allowed member types:
+
 Users/Groups
 
 Value:
+
 backstage.developer
 
 Description:
+
 Backstage platform developer
 ```
 
@@ -545,6 +551,7 @@ The important values are:
 
 ```text
 backstage.admin
+
 backstage.developer
 ```
 
@@ -614,9 +621,164 @@ For an administrator:
 }
 ```
 
+> **Important:** Assigning the user a role in Microsoft Entra ID is only part of the onboarding process. The user must also be registered in the Backstage Catalog as described in the next step.
+
 ---
 
-# 9. Configure the GitHub App
+# 9. Register Users in the Backstage Catalog
+
+The platform's authentication resolver uses the user's Microsoft Entra object ID (`oid`) to find the corresponding user in the Backstage Catalog.
+
+The mapping is stored in:
+
+```text
+examples/org.yaml
+```
+
+The relevant Catalog user entry contains the user's Microsoft Entra object ID through the annotation:
+
+```yaml
+microsoft.com/user-oid: <YOUR-ENTRA-USER-OBJECT-ID>
+```
+
+For example:
+
+```yaml
+apiVersion: backstage.io/v1alpha1
+kind: User
+metadata:
+  name: bilal
+  annotations:
+    microsoft.com/user-oid: <YOUR-ENTRA-USER-OBJECT-ID>
+spec:
+  profile:
+    displayName: Bilal
+    email: bilal@example.com
+  memberOf:
+    - backstage-developers
+```
+
+Replace:
+
+```text
+<YOUR-ENTRA-USER-OBJECT-ID>
+```
+
+with the user's **Object ID** from Microsoft Entra ID.
+
+The Object ID can be found from the user's Microsoft Entra profile.
+
+The value must correspond to the `oid` claim provided by Microsoft Entra ID during authentication.
+
+The relationship is:
+
+```text
+Microsoft Entra ID
+        |
+        | oid
+        v
+microsoft.com/user-oid
+        |
+        v
+Backstage Catalog User
+        |
+        v
+user:default/<username>
+```
+
+For example:
+
+```text
+Entra user
+    |
+    | oid = 12345678-....
+    v
+org.yaml
+    |
+    | microsoft.com/user-oid: 12345678-....
+    v
+user:default/bilal
+```
+
+### Why this step is required
+
+During sign-in, the custom resolver in:
+
+```text
+packages/backend/src/auth.ts
+```
+
+reads the Entra user's `oid` and searches the Backstage Catalog for a matching user.
+
+Conceptually:
+
+```text
+User signs in
+      ↓
+Microsoft Entra ID
+      ↓
+OIDC ID token
+      ↓
+claims.oid
+      ↓
+Backstage auth resolver
+      ↓
+Find Catalog user using:
+microsoft.com/user-oid
+      ↓
+User found?
+   /        \
+ Yes        No
+  |          |
+  v          v
+Sign in    "no user found"
+```
+
+Therefore, if a new employee is correctly configured in Microsoft Entra ID but is not added to `examples/org.yaml`, authentication will fail because Backstage cannot map the authenticated Entra identity to a Backstage Catalog user.
+
+### Adding a new user
+
+When onboarding a new user:
+
+1. Create or verify the user in Microsoft Entra ID.
+2. Assign the appropriate Backstage application role in the Enterprise Application.
+3. Obtain the user's Microsoft Entra **Object ID**.
+4. Add the corresponding user to `examples/org.yaml`.
+5. Set the `microsoft.com/user-oid` annotation to the user's Object ID.
+6. Set the appropriate Backstage group membership.
+7. Start/reload Backstage if required by the local Catalog configuration.
+8. Have the user sign in using Microsoft Entra ID.
+
+For example:
+
+```yaml
+apiVersion: backstage.io/v1alpha1
+kind: User
+metadata:
+  name: new-user
+  annotations:
+    microsoft.com/user-oid: <NEW-USER-ENTRA-OBJECT-ID>
+spec:
+  profile:
+    displayName: New User
+    email: new-user@example.com
+  memberOf:
+    - backstage-developers
+```
+
+The user's Entra application role and Backstage Catalog membership serve different purposes:
+
+| Configuration | Purpose |
+|---|---|
+| Entra application role | Determines the user's application role received during authentication |
+| `microsoft.com/user-oid` | Maps the Entra identity to a Backstage Catalog user |
+| `memberOf` in `org.yaml` | Defines the user's Backstage Catalog group membership |
+
+> **Important:** Do not put the user's Entra client secret, password, access token, ID token, or other credentials in `org.yaml`. Only the identity information required by the Catalog mapping should be stored there.
+
+---
+
+# 10. Configure the GitHub App
 
 The Backstage Scaffolder uses a GitHub App to create repositories and interact with GitHub.
 
@@ -641,7 +803,9 @@ Example:
 
 ```yaml
 appId: <YOUR-GITHUB-APP-ID>
+
 clientId: <YOUR-GITHUB-APP-CLIENT-ID>
+
 clientSecret: <YOUR-GITHUB-APP-CLIENT-SECRET>
 
 privateKey: |
@@ -680,7 +844,7 @@ Use your own organization name.
 
 ---
 
-# 10. Configure AWS
+# 11. Configure AWS
 
 The generated healthcare service repository uses Terraform to provision AWS infrastructure.
 
@@ -690,19 +854,27 @@ The authentication model is:
 
 ```text
 GitHub Actions
+
        |
        | OIDC JWT
        v
+
 GitHub OIDC Identity Provider
+
        |
        v
+
 AWS IAM
+
        |
        | AssumeRoleWithWebIdentity
        v
+
 AWS IAM Role
+
        |
        v
+
 AWS Resources
 ```
 
@@ -782,14 +954,17 @@ The ARN is not an AWS secret, but it is environment-specific configuration and s
 
 ---
 
-# 11. Configure Environment Variables
+# 12. Configure Environment Variables
 
 The Backstage authentication configuration uses:
 
 ```text
 AUTH_OIDC_METADATA_URL
+
 AUTH_OIDC_CLIENT_ID
+
 AUTH_OIDC_CLIENT_SECRET
+
 AUTH_SESSION_SECRET
 ```
 
@@ -846,7 +1021,7 @@ $env:AUTH_SESSION_SECRET="<GENERATED-VALUE>"
 
 ---
 
-# 12. Configure the Service Repository
+# 13. Configure the Service Repository
 
 The healthcare service template creates a GitHub repository for the service.
 
@@ -906,7 +1081,7 @@ The `owner` value must correspond to the GitHub organization configured for the 
 
 ---
 
-# 13. Start Backstage
+# 14. Start Backstage
 
 After configuring the required environment variables and GitHub/AWS settings:
 
@@ -970,7 +1145,9 @@ The current template supports:
 
 ```text
 patient-service
+
 appointment-service
+
 billing-service
 ```
 
@@ -980,7 +1157,9 @@ The available environments are:
 
 ```text
 dev
+
 staging
+
 prod
 ```
 
@@ -1019,10 +1198,8 @@ The authentication configuration follows this structure:
 ```yaml
 auth:
   environment: development
-
   session:
     secret: ${AUTH_SESSION_SECRET}
-
   providers:
     oidc:
       development:
@@ -1048,13 +1225,42 @@ providers:
 
 ---
 
+## Backstage Catalog User Mapping
+
+The Backstage Catalog user configuration is stored in:
+
+```text
+examples/org.yaml
+```
+
+A user is associated with their Microsoft Entra identity using:
+
+```yaml
+annotations:
+  microsoft.com/user-oid: <YOUR-ENTRA-USER-OBJECT-ID>
+```
+
+The value must match the user's Microsoft Entra `oid` claim.
+
+This mapping is used by:
+
+```text
+packages/backend/src/auth.ts
+```
+
+during sign-in.
+
+---
+
 ## GitHub App Configuration
 
 The local GitHub App credentials file follows the structure:
 
 ```yaml
 appId: <YOUR-GITHUB-APP-ID>
+
 clientId: <YOUR-GITHUB-APP-CLIENT-ID>
+
 clientSecret: <YOUR-GITHUB-APP-CLIENT-SECRET>
 
 privateKey: |
@@ -1194,6 +1400,7 @@ The important principle is that application configuration should consume secrets
 
 ```text
 backstage-platform/
+
 │
 ├── app-config.yaml
 │
@@ -1235,6 +1442,20 @@ Sensitive values are loaded through environment variables.
 
 ---
 
+## `examples/org.yaml`
+
+Contains Backstage Catalog entities used by the platform.
+
+For users, the file maps Microsoft Entra identities to Backstage Catalog users using:
+
+```yaml
+microsoft.com/user-oid: <YOUR-ENTRA-USER-OBJECT-ID>
+```
+
+This mapping allows the authentication resolver to locate the corresponding Backstage user after Microsoft Entra authentication.
+
+---
+
 ## `packages/backend/src/auth.ts`
 
 Contains the custom OIDC provider and sign-in resolver.
@@ -1244,7 +1465,7 @@ The resolver:
 1. Receives the authenticated user's OIDC information.
 2. Reads the Entra ID claims.
 3. Reads the user's Entra application roles.
-4. Finds the matching Backstage catalog user.
+4. Finds the matching Backstage Catalog user using the Entra Object ID.
 5. Maps Entra roles to Backstage groups.
 6. Issues the Backstage identity token.
 
@@ -1258,14 +1479,23 @@ It evaluates:
 
 ```text
 User identity
+
     +
+
 Ownership entity references
+
     +
+
 Requested permission
+
     +
+
 Resource ownership where required
+
     |
+
     v
+
 ALLOW / DENY
 ```
 
@@ -1330,6 +1560,19 @@ For local development, the redirect URI must match:
 http://localhost:7007/api/auth/oidc/handler/frame
 ```
 
+When onboarding a new user during development, make sure both of the following are configured:
+
+```text
+Microsoft Entra ID
+    |
+    +-- User assigned to Backstage application role
+    |
+    v
+examples/org.yaml
+    |
+    +-- User added with microsoft.com/user-oid
+```
+
 ---
 
 # Current Scope
@@ -1340,21 +1583,28 @@ The core platform provides:
 
 ```text
                     Healthcare Developer
+
                             |
+
                             v
+
                      +-------------+
                      |  Backstage  |
                      +------+------+
                             |
+
              +--------------+--------------+
              |                             |
              v                             v
+
       Microsoft Entra ID             Permission
       Authentication                  Framework
+
              |                             |
              +--------------+--------------+
                             |
                             v
+
                   Healthcare Template
                             |
                             v
@@ -1364,14 +1614,14 @@ The core platform provides:
                             |             |
                             v             v
                          GitHub       Terraform
-                                        |
-                                        v
-                                       AWS
-                                        ^
-                                        |
-                                  GitHub Actions
-                                        |
-                                       OIDC
+                                          |
+                                          v
+                                         AWS
+                                          ^
+                                          |
+                                    GitHub Actions
+                                          |
+                                         OIDC
 ```
 
 The platform can be extended in the future with additional service templates, infrastructure modules, environments, policies, and integrations.
@@ -1384,31 +1634,53 @@ This platform provides a standardized developer self-service workflow:
 
 ```text
                     Developer
+
                         |
+
                         v
+
                 Microsoft Entra ID
+
                         |
+
                   Authentication
+
                         |
+
                         v
+
                     Backstage
+
                         |
+
                   Authorization
+
                         |
+
                         v
+
               Healthcare Template
+
                         |
+
                         v
-                  GitHub Repository
+
+                GitHub Repository
+
                         |
+
                         v
+
                     Terraform
+
                         |
+
                         v
+
                        AWS
                         ^
                         |
-                  GitHub Actions
+                 GitHub Actions
                         |
                        OIDC
 ```
