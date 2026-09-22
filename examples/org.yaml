@@ -2,24 +2,6 @@
 apiVersion: backstage.io/v1alpha1
 kind: User
 metadata:
-  name: guest
-spec:
-  memberOf: []
-
----
-apiVersion: backstage.io/v1alpha1
-kind: User
-metadata:
-  name: imran
-spec:
-  profile:
-    displayName: Imran Ahmad
-  memberOf: []
-
----
-apiVersion: backstage.io/v1alpha1
-kind: User
-metadata:
   name: ali
   annotations:
    microsoft.com/user-oid: <your-real-user-oid>
@@ -28,16 +10,6 @@ spec:
     displayName: Ali
   memberOf: []
 
----
-apiVersion: backstage.io/v1alpha1
-kind: User
-metadata:
-  name: bilal
-  annotations:
-    microsoft.com/user-oid: <your-real-user-oid>
-spec:
-  profile:
-    displayName: Bilal
-  memberOf: []
+
 
   

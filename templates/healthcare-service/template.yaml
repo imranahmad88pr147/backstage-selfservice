@@ -2,50 +2,56 @@ apiVersion: scaffolder.backstage.io/v1beta3
 kind: Template
 
 metadata:
-  name: healthcare-service
-  title: Healthcare Service
-  description: Create a standardized healthcare service repository, Terraform infrastructure and CI/CD configuration. The tags indicate the AWS resources that will be provisioned when this template is used to create the service.
+  name: infrastructure-provisioning
+  title: Provision Infrastructure
+  description: Provision standardized AWS infrastructure through the platform. Security and infrastructure standards are applied automatically.
   tags:
-    - s3-bucket
-    - ec2-instance
+    - infrastructure
+    - aws
+    - ec2
+    - s3
 
 spec:
-  type: service
+  type: infrastructure
 
   parameters:
 
-    - title: Service Information
+    - title: Infrastructure
       required:
-        - serviceName
-        - serviceType
+        - infrastructure
+        - resourceName
         - environment
+        - purpose
 
       properties:
 
-        serviceName:
-          title: Service Name
+        infrastructure:
+          title: Infrastructure
+          type: array
+          description: Select the infrastructure you need
+          minItems: 1
+          items:
+            type: string
+            enum:
+              - ec2
+              - s3
+          uniqueItems: true
+          ui:widget: checkboxes
+          enumNames:
+            - EC2 Instance
+            - S3 Bucket
+
+        resourceName:
+          title: Resource Name
           type: string
-          description: Unique name for the healthcare service
+          description: A short name identifying this infrastructure
           pattern: '^[a-z0-9]+(-[a-z0-9]+)*$'
           ui:autofocus: true
-
-        serviceType:
-          title: Service Type
-          type: string
-          description: Select the type of healthcare service
-          enum:
-            - patient-service
-            - appointment-service
-            - billing-service
-          enumNames:
-            - Patient Service
-            - Appointment Service
-            - Billing Service
 
         environment:
           title: Environment
           type: string
-          description: Select the deployment environment
+          description: Select the infrastructure environment
           enum:
             - dev
             - staging
@@ -56,26 +62,36 @@ spec:
             - Production
           default: dev
 
+        purpose:
+          title: Purpose
+          type: string
+          description: Briefly describe why this infrastructure is needed
+          minLength: 10
+          ui:widget: textarea
+
   steps:
+  
 
     - id: fetch-template
-      name: Generate Service
+      name: Generate Infrastructure
       action: fetch:template
       input:
         url: ./content
         copyWithoutTemplating:
           - .github/workflows/*
         values:
-          serviceName: ${{ parameters.serviceName }}
-          serviceType: ${{ parameters.serviceType }}
+          infrastructure: ${{ parameters.infrastructure }}
+          resourceName: ${{ parameters.resourceName }}
           environment: ${{ parameters.environment }}
+          purpose: ${{ parameters.purpose }}
+          
 
     - id: publish
       name: Create GitHub Repository
       action: publish:github
       input:
-        description: ${{ parameters.serviceType }} - ${{ parameters.serviceName }}
-        repoUrl: github.com?owner=<YOUR-GITHUB-ORG>&repo=${{ parameters.serviceName }}
+        description: Infrastructure - ${{ parameters.resourceName }} - ${{ parameters.environment }}
+        repoUrl: github.com?owner=<GITHUB_ORG>&repo=infra-${{ parameters.resourceName }}-${{ parameters.environment }}
         defaultBranch: main
 
   output:

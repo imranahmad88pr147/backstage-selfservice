@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project follows [Semantic Versioning](https://semver.org/).
 
+## [1.1.0] - 2026-09-23
+
+### Added
+
+- Added infrastructure self-service provisioning workflow.
+- Added support for provisioning EC2 and S3 infrastructure through the Backstage platform.
+- Added infrastructure selection, allowing developers to choose the AWS infrastructure they need.
+- Added resource name, environment, and infrastructure purpose inputs.
+- Added environment selection for `dev`, `staging`, and `prod`.
+- Added automatic Terraform configuration generation based on the selected infrastructure.
+- Added automatic unique suffix generation for S3 bucket names to prevent global naming conflicts.
+- Added automatic GitHub repository creation for infrastructure requests.
+- Added Terraform provisioning through the generated infrastructure repositories.
+- Added GitHub Actions CI/CD workflow for validating and deploying generated Terraform configurations.
+
+### Changed
+
+- Replaced the previous healthcare service scaffolder template with an infrastructure provisioning template.
+- Updated the scaffolder inputs and workflow to support infrastructure selection, resource naming, environment selection, and infrastructure purpose.
+- Updated generated repositories and Terraform configuration to reflect the new infrastructure provisioning workflow.
+
 ## [1.0.0] - 2026-09-20
 
 ### Added
