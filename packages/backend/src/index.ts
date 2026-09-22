@@ -28,11 +28,6 @@ backend.add(import('@backstage/plugin-catalog-backend-module-logs'));
 
 // permission plugin
 backend.add(import('@backstage/plugin-permission-backend'));
-// I am merging the following policy with my new custom policy made for rbac.
-// Custom policy: deny catalog.entity.create to hide "Register Existing Component"
-// backend.add(
-//   import('./plugins/permissions/module'),
-// );
 
 // search plugin
 backend.add(import('@backstage/plugin-search-backend'));
