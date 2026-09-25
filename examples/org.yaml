@@ -4,12 +4,11 @@ kind: User
 metadata:
   name: ali
   annotations:
-   microsoft.com/user-oid: <your-real-user-oid>
+   microsoft.com/user-oid: e2555667-ba77-49de-b5ec-d6bebafd8ec1
 spec:
   profile:
     displayName: Ali
   memberOf: []
-
 
 
   

@@ -46,4 +46,5 @@ backend.add(
   import('@internal/backstage-plugin-permission-backend-module-authorization'),
 );
 
+backend.add(import('./scaffolder/module'));
 backend.start();

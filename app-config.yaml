@@ -3,6 +3,7 @@
 app:
   title: Scaffolded Backstage App
   baseUrl: http://localhost:3000
+  
 
   # Enable all packages by default, this will discover packages from packages/app/package.json
   packages: all
@@ -60,6 +61,17 @@ app:
 
 organization:
   name: My Company
+
+platform:
+  github:
+    organization: <your-github-org>
+
+    repositoryAccess:
+      teamSlug: <your-team-slug>
+
+    productionEnvironment:
+      name: production
+      reviewerTeamId: <your-team-id>
 
 backend:
   baseUrl: http://localhost:7007

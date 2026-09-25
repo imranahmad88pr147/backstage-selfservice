@@ -44,7 +44,7 @@ spec:
         resourceName:
           title: Resource Name
           type: string
-          description: A short name identifying this infrastructure
+          description: Name to assign to the provisioned AWS resource
           pattern: '^[a-z0-9]+(-[a-z0-9]+)*$'
           ui:autofocus: true
 
@@ -70,10 +70,13 @@ spec:
           ui:widget: textarea
 
   steps:
-  
+
+    - id: generateInfrastructureId
+      name: Generate Infrastructure ID
+      action: platform:generateInfrastructureId
 
     - id: fetch-template
-      name: Generate Infrastructure
+      name: Generate Terraform Files
       action: fetch:template
       input:
         url: ./content
@@ -84,15 +87,22 @@ spec:
           resourceName: ${{ parameters.resourceName }}
           environment: ${{ parameters.environment }}
           purpose: ${{ parameters.purpose }}
-          
+          infrastructureId: ${{ steps.generateInfrastructureId.output.infrastructureId }}
 
     - id: publish
       name: Create GitHub Repository
       action: publish:github
       input:
         description: Infrastructure - ${{ parameters.resourceName }} - ${{ parameters.environment }}
-        repoUrl: github.com?owner=<GITHUB_ORG>&repo=infra-${{ parameters.resourceName }}-${{ parameters.environment }}
+        repoUrl: github.com?owner=infrastructure-platform&repo=infra-${{ parameters.resourceName }}-${{ parameters.environment }}-${{ steps.generateInfrastructureId.output.infrastructureId }}
         defaultBranch: main
+
+    - id: configure-github-environment
+      name: Configure GitHub Environment
+      action: platform:configureGithubEnvironment
+      input:
+        repoUrl: ${{ steps.publish.output.remoteUrl }}
+        environment: ${{ parameters.environment }}
 
   output:
 

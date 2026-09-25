@@ -10,8 +10,62 @@ permissions:
   contents: read
 
 jobs:
-  terraform:
-    name: Terraform
+  plan:
+    name: Terraform Plan
+    runs-on: ubuntu-latest
+
+    outputs:
+      environment: ${{ steps.read-environment.outputs.environment }}
+
+    defaults:
+      run:
+        working-directory: terraform
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Read environment
+        id: read-environment
+        run: |
+          ENVIRONMENT=$(cat platform-environment.txt)
+          echo "environment=$ENVIRONMENT" >> "$GITHUB_OUTPUT"
+          echo "Infrastructure environment: $ENVIRONMENT"
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_TERRAFORM_ROLE_ARN }}
+          aws-region: us-east-1
+
+      - name: Verify AWS identity
+        run: aws sts get-caller-identity
+
+      - name: Terraform Init
+        run: terraform init
+
+      - name: Terraform Validate
+        run: terraform validate
+
+      - name: Terraform Plan
+        run: terraform plan -out=tfplan
+
+      - name: Upload Terraform plan
+        uses: actions/upload-artifact@v4
+        with:
+          name: terraform-plan
+          path: terraform/tfplan
+          retention-days: 1
+
+
+  apply-non-production:
+    name: Terraform Apply
+    needs: plan
+    if: needs.plan.outputs.environment != 'prod'
+
     runs-on: ubuntu-latest
 
     defaults:
@@ -28,23 +82,57 @@ jobs:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          role-to-assume: ${{ vars.AWS_TERRAFORM_ROLE_ARN }}
           aws-region: us-east-1
-
-      - name: Verify AWS identity
-        run: aws sts get-caller-identity
 
       - name: Terraform Init
         run: terraform init
 
-      - name: Terraform Format Check
-        run: terraform fmt -check -recursive
+      - name: Download Terraform plan
+        uses: actions/download-artifact@v4
+        with:
+          name: terraform-plan
+          path: terraform
 
-      - name: Terraform Validate
-        run: terraform validate
-
-      - name: Terraform Plan
-        run: terraform plan
-      
       - name: Terraform Apply
-        run:  terraform apply -auto-approve
+        run: terraform apply -auto-approve tfplan
+
+
+  apply-production:
+    name: Terraform Apply - Production
+    needs: plan
+    if: needs.plan.outputs.environment == 'prod'
+
+    runs-on: ubuntu-latest
+
+    environment:
+      name: production
+
+    defaults:
+      run:
+        working-directory: terraform
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_TERRAFORM_ROLE_ARN }}
+          aws-region: us-east-1
+
+      - name: Terraform Init
+        run: terraform init
+
+      - name: Download Terraform plan
+        uses: actions/download-artifact@v4
+        with:
+          name: terraform-plan
+          path: terraform
+
+      - name: Terraform Apply
+        run: terraform apply -auto-approve tfplan
